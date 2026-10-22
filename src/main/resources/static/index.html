@@ -1,0 +1,654 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Omotenashi - Controle de Estoque</title>
+    <style>
+        /* TEMA PADRÃƒO */
+        :root {
+            --bg-principal: #f4f6f9;
+            --card-bg: #ffffff;
+            --texto-principal: #333333;
+            --texto-suave: #666666;
+            --borda-sutil: #ccc;
+            --destaque-bambu: #28a745;
+            --destaque-madeira: #17a2b8;
+            --th-extrato-bg: #007bff;
+            --th-extrato-color: #ffffff;
+            --th-consolidado-bg: #28a745;
+            --th-consolidado-color: #ffffff;
+            --th-loja-bg: #17a2b8;
+            --th-mensal-bg: #6c757d;
+            --btn-lancar: #28a745;
+            --btn-filtro: #007bff;
+            --filter-bg: #e9ecef;
+            --input-bg: #ffffff;
+        }
+
+        /* TEMA OMOTENASHI (Todas as tabelas usam o mesmo estilo do extrato) */
+        [data-theme="omotenashi"] {
+            --bg-principal: #fbf9f6; 
+            --card-bg: #ffffff;
+            --texto-principal: #2c2c2c;
+            --texto-suave: #6e6e6e;
+            --borda-sutil: #e5e0d8;
+            --destaque-bambu: #708238; 
+            --destaque-madeira: #8c6239; 
+            --th-extrato-bg: #f4efe6;
+            --th-extrato-color: #2c2c2c;
+            --th-consolidado-bg: #f4efe6;
+            --th-consolidado-color: #2c2c2c;
+            --th-loja-bg: #f4efe6;
+            --th-mensal-bg: #f4efe6;
+            --btn-lancar: #708238;
+            --btn-filtro: #555555;
+            --filter-bg: #f4efe6;
+            --input-bg: #faf8f5;
+        }
+
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 10px; 
+            background-color: var(--bg-principal); 
+            color: var(--texto-principal);
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        h3 { font-size: 15px; color: var(--texto-principal); }
+        
+        .logo-topo {
+            height: 45px;
+            width: auto;
+            object-fit: contain;
+            cursor: pointer;
+            transition: opacity 0.2s;
+        }
+        .logo-topo:hover {
+            opacity: 0.8;
+        }
+
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 2px solid var(--destaque-bambu);
+        }
+
+        .titulo-wrapper {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .subtitulo-kanji {
+            font-size: 11px;
+            color: var(--texto-suave);
+            letter-spacing: 2px;
+            margin-top: 2px;
+            font-weight: bold;
+        }
+
+        .header-direita {
+            display: flex;
+            align-items: center;
+        }
+
+        .card { 
+            background: var(--card-bg); 
+            padding: 15px; 
+            border-radius: 8px; 
+            border: 1px solid var(--borda-sutil);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
+            margin-bottom: 15px; 
+        }
+
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; align-items: end; }
+        .form-group { display: flex; flex-direction: column; }
+        
+        label { font-size: 12px; font-weight: bold; color: var(--texto-principal); margin-bottom: 4px; }
+        
+        input, select, button { 
+            padding: 8px; 
+            box-sizing: border-box; 
+            font-size: 14px; 
+            border: 1px solid var(--borda-sutil); 
+            border-radius: 4px; 
+            background: var(--input-bg);
+            color: var(--texto-principal);
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--destaque-bambu);
+        }
+        
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+
+        .input-kg-wrapper { position: relative; display: flex; align-items: center; }
+        .input-kg-wrapper input { width: 100%; padding-right: 30px; }
+        .input-kg-wrapper .kg-label { position: absolute; right: 8px; font-size: 11px; font-weight: bold; color: var(--texto-suave); pointer-events: none; }
+
+        .btn-lancar { background-color: var(--btn-lancar); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; width: 100%; margin-top: 12px; padding: 10px; font-size: 14px; }
+        .btn-lancar:hover { opacity: 0.9; }
+
+        .btn-filtro { background-color: var(--btn-filtro); color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; padding: 7px 12px; font-size: 13px; }
+        .btn-filtro:hover { opacity: 0.9; }
+
+        .btn-export { background-color: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; padding: 7px 10px; font-size: 12px; }
+        .btn-export:hover { opacity: 0.9; }
+        .btn-excel { background-color: #217346; }
+        .btn-pdf { background-color: #d32f2f; }
+        .btn-wpp { background-color: #25d366; color: #000; }
+
+        .btn-excluir { 
+            background-color: transparent; 
+            color: #dc3545; 
+            border: 1px solid #dc3545; 
+            width: 22px; 
+            height: 22px; 
+            border-radius: 4px; 
+            cursor: pointer; 
+            font-size: 11px; 
+            font-weight: bold; 
+            display: inline-flex; 
+            align-items: center; 
+            justify-content: center; 
+            padding: 0; 
+            transition: all 0.2s ease;
+        }
+        .btn-excluir:hover { 
+            background-color: #dc3545; 
+            color: white; 
+        }
+
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 12px; white-space: nowrap; }
+        th, td { border: 1px solid var(--borda-sutil); padding: 8px; text-align: center; }
+        
+        th { background-color: var(--th-extrato-bg); color: var(--th-extrato-color); }
+        .table-consolidado th { background-color: var(--th-consolidado-bg); color: var(--th-consolidado-color); }
+        .table-loja th { background-color: var(--th-loja-bg); color: var(--th-extrato-color); }
+        .table-mensal th { background-color: var(--th-mensal-bg); color: var(--th-extrato-color); }
+        
+        .filter-bar { display: flex; gap: 8px; align-items: end; background: var(--filter-bg); padding: 10px; border-radius: 6px; flex-wrap: wrap; border: 1px solid var(--borda-sutil); }
+
+        @media print {
+            .card:not(:nth-of-type(2)), .form-grid, .filter-bar, .btn-excluir, .btn-lancar, button { display: none !important; }
+            body { background: white; margin: 0; }
+            .card { box-shadow: none; border: none; padding: 0; margin: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- CABEÃ‡ALHO -->
+    <div class="header-container">
+        <div class="titulo-wrapper">
+            <h2 style="margin: 0; color: var(--texto-principal); font-size: 20px;">Omotenashi - Controle de Estoque</h2>
+            <span class="subtitulo-kanji">ãŠã‚‚ã¦ãªã—</span>
+        </div>
+        <div class="header-direita">
+            <div class="logo-topo" onclick="alternarTema()" title="Clique para alternar o tema" style="font-weight: bold; font-size: 14px; letter-spacing: 1px; color: var(--destaque-bambu); display: flex; align-items: center; gap: 6px; cursor: pointer; user-select: none;"><span>🥢</span> <span>OMOTENASHI TECH</span></div>
+        </div>
+    </div>
+
+    <!-- FORMULÃRIO DE LANÃ‡AMENTO -->
+    <div class="card">
+        <h3>LanÃ§amento</h3>
+        <form id="formMovimentacao">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label>Data:</label>
+                    <input type="date" id="data" required>
+                </div>
+                <div class="form-group">
+                    <label>Produto:</label>
+                    <select id="produto" required>
+                        <option value="" disabled selected>Selecione</option>
+                        <option value="SalmÃ£o">SalmÃ£o</option>
+                        <option value="Atum">Atum</option>
+                        <option value="CamarÃ£o">CamarÃ£o</option>
+                        <option value="Haddock">Haddock</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Entrada:</label>
+                    <div class="input-kg-wrapper">
+                        <input type="text" id="estoqueEntrada" maxlength="7" placeholder="" autocomplete="off">
+                        <span class="kg-label">Kg</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>OlegÃ¡rio:</label>
+                    <div class="input-kg-wrapper">
+                        <input type="text" id="saidaFilialCentro" maxlength="7" placeholder="" autocomplete="off">
+                        <span class="kg-label">Kg</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Filial Norte:</label>
+                    <div class="input-kg-wrapper">
+                        <input type="text" id="saidaFilialNorte" maxlength="7" placeholder="" autocomplete="off">
+                        <span class="kg-label">Kg</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Filial Sul:</label>
+                    <div class="input-kg-wrapper">
+                        <input type="text" id="saidaFilialSul" maxlength="7" placeholder="" autocomplete="off">
+                        <span class="kg-label">Kg</span>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>ResponsÃ¡vel:</label>
+                    <input type="text" id="responsavel" maxlength="15" placeholder="" required>
+                </div>
+            </div>
+            <button type="submit" class="btn-lancar">Adicionar ao Extrato</button>
+        </form>
+    </div>
+
+    <!-- BARRA DE FILTRO E EXPORTAÃ‡ÃƒO -->
+    <div class="card">
+        <div class="filter-bar">
+            <div class="form-group" style="flex: 1; min-width: 130px;">
+                <label>Data InÃ­cio:</label>
+                <input type="date" id="filtroDataInicio">
+            </div>
+            <div class="form-group" style="flex: 1; min-width: 130px;">
+                <label>Data Fim:</label>
+                <input type="date" id="filtroDataFim">
+            </div>
+            <button type="button" class="btn-filtro" onclick="carregarDados()">Filtrar</button>
+            <button type="button" class="btn-filtro" style="background-color: #6c757d;" onclick="limparFiltro()">Ver Todos</button>
+            <div style="width: 1px; background: var(--borda-sutil); height: 35px; margin: 0 4px; align-self: center;"></div>
+            <button type="button" class="btn-export btn-excel" onclick="exportarExcel()">Excel</button>
+            <button type="button" class="btn-export btn-pdf" onclick="exportarPDF()">PDF</button>
+            <button type="button" class="btn-export btn-wpp" onclick="enviarWhatsApp()">WhatsApp</button>
+        </div>
+
+        <!-- TABELA 1 -->
+        <h3 style="margin-top: 15px;">1. Extrato de MovimentaÃ§Ãµes</h3>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Data/Hora</th>
+                        <th>Produto</th>
+                        <th>Est. Inicial</th>
+                        <th>Entrada</th>
+                        <th>OlegÃ¡rio</th>
+                        <th>Filial Norte</th>
+                        <th>Filial Sul</th>
+                        <th>Estoque Atual</th>
+                        <th>Resp.</th>
+                        <th>AÃ§Ãµes</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaExtrato"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- TABELA 2 -->
+    <div class="card">
+        <h3>2. RelatÃ³rio Consolidado Geral por Produto (Estoque Atual)</h3>
+        <div class="table-container">
+            <table class="table-consolidado">
+                <thead>
+                    <tr>
+                        <th>Produto</th>
+                        <th>Total Entradas</th>
+                        <th>Total SaÃ­das (Todas Lojas)</th>
+                        <th>ESTOQUE ATUAL</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaConsolidada"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- TABELA 3 -->
+    <div class="card">
+        <h3>3. RelatÃ³rio por Loja / Destino</h3>
+        <div class="table-container">
+            <table class="table-loja">
+                <thead>
+                    <tr>
+                        <th>Produto</th>
+                        <th>Total OlegÃ¡rio</th>
+                        <th>Total Filial Norte</th>
+                        <th>Total Filial Sul</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaPorLoja"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- TABELA 4 -->
+    <div class="card">
+        <h3>4. HistÃ³rico de Fechamentos Mensais</h3>
+        <div class="table-container">
+            <table class="table-mensal">
+                <thead>
+                    <tr>
+                        <th>MÃªs/Ano</th>
+                        <th>Produto</th>
+                        <th>Total Entradas</th>
+                        <th>Total SaÃ­das</th>
+                        <th>Estoque Final (Fechamento)</th>
+                        <th>Data do Fechamento</th>
+                    </tr>
+                </thead>
+                <tbody id="tabelaRelatorioMensal"></tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function alternarTema() {
+            const htmlEl = document.documentElement;
+            const temaAtual = htmlEl.getAttribute('data-theme');
+            if (temaAtual === 'omotenashi') {
+                htmlEl.removeAttribute('data-theme');
+                localStorage.setItem('omotenashi_tema', 'classico');
+            } else {
+                htmlEl.setAttribute('data-theme', 'omotenashi');
+                localStorage.setItem('omotenashi_tema', 'omotenashi');
+            }
+        }
+
+        (function() {
+            const temaSalvo = localStorage.getItem('omotenashi_tema');
+            if (temaSalvo === 'omotenashi') {
+                document.documentElement.setAttribute('data-theme', 'omotenashi');
+            }
+        })();
+
+        const d = new Date();
+        const ano = d.getFullYear();
+        const mes = String(d.getMonth() + 1).padStart(2, '0');
+        const dia = String(d.getDate()).padStart(2, '0');
+        const hojeLocal = `${ano}-${mes}-${dia}`;
+
+        const inputData = document.getElementById('data');
+        if (!inputData.value) inputData.value = hojeLocal;
+        const inputInicio = document.getElementById('filtroDataInicio');
+        if (!inputInicio.value) inputInicio.value = hojeLocal;
+        const inputFim = document.getElementById('filtroDataFim');
+        if (!inputFim.value) inputFim.value = hojeLocal;
+
+        let dadosFiltradosGlobais = [];
+        let consolidadosGlobais = {};
+
+        function converterParaFloat(id) {
+            const valStr = document.getElementById(id).value.trim();
+            if (!valStr) return 0;
+            return parseFloat(valStr.replace(',', '.')) || 0;
+        }
+
+        async function carregarDados() {
+            try {
+                const resposta = await fetch('/movimentacoes');
+                const dados = await resposta.json();
+                
+                const dataInicio = document.getElementById('filtroDataInicio').value;
+                const dataFim = document.getElementById('filtroDataFim').value;
+                const tabelaExtrato = document.getElementById('tabelaExtrato');
+                tabelaExtrato.innerHTML = '';
+
+                dadosFiltradosGlobais = dados.filter(item => {
+                    let dataItem = item.data ? String(item.data).substring(0, 10) : (item.dataHora ? String(item.dataHora).substring(0, 10) : '');
+                    if (!dataItem) return false;
+                    
+                    if (dataInicio && dataFim) {
+                        return dataItem >= dataInicio && dataItem <= dataFim;
+                    } else if (dataInicio) {
+                        return dataItem >= dataInicio;
+                    } else if (dataFim) {
+                        return dataItem <= dataFim;
+                    }
+                    return true;
+                });
+
+                dadosFiltradosGlobais.forEach(item => {
+                    let dataFormatada = '-';
+                    let horaExibida = '00:00:00';
+                    let dataBase = item.data ? String(item.data).substring(0, 10) : (item.dataHora ? String(item.dataHora).substring(0, 10) : '');
+                    if (dataBase) {
+                        const [an, mn, dn] = dataBase.split('-');
+                        if (an && mn && dn) dataFormatada = `${dn}-${mn}-${an}`;
+                    }
+                    if (item.dataHora && String(item.dataHora).includes('T')) {
+                        const partes = String(item.dataHora).split('T');
+                        horaExibida = partes[1] ? partes[1].substring(0, 8) : '00:00:00';
+                    }
+                    
+                    tabelaExtrato.innerHTML += `<tr>
+                        <td>${item.id}</td>
+                        <td>${dataFormatada} ${horaExibida}</td>
+                        <td><strong>${item.produto || '-'}</strong></td>
+                        <td>${(item.estoqueInicial ?? 0).toFixed(2).replace('.', ',')} Kg</td>
+                        <td>${(item.estoqueEntrada ?? 0).toFixed(2).replace('.', ',')} Kg</td>
+                        <td><strong>${(item.saidaFilialCentro ?? 0).toFixed(2).replace('.', ',')}</strong> Kg</td>
+                        <td><strong>${(item.saidaFilialNorte ?? 0).toFixed(2).replace('.', ',')}</strong> Kg</td>
+                        <td><strong>${(item.saidaFilialSul ?? 0).toFixed(2).replace('.', ',')}</strong> Kg</td>
+                        <td>${(item.estoqueFimDoDia ?? 0).toFixed(2).replace('.', ',')} Kg</td>
+                        <td>${item.responsavel || '-'}</td>
+                        <td><button class="btn-excluir" title="Excluir lanÃ§amento" onclick="excluirMovimentacao(${item.id})">âœ•</button></td>
+                    </tr>`;
+                });
+
+                const ordemProdutos = ['SalmÃ£o', 'Atum', 'CamarÃ£o', 'Haddock'];
+                consolidadosGlobais = {};
+
+                ordemProdutos.forEach(prod => {
+                    consolidadosGlobais[prod] = { produto: prod, entrada: 0, totalSaidas: 0, filialCentro: 0, filialNorte: 0, filialSul: 0, ultimoFimDia: 0 };
+                });
+
+                dados.forEach(item => {
+                    const prodKey = item.produto;
+                    if (consolidadosGlobais[prodKey]) {
+                        const olegario = item.saidaFilialCentro || 0;
+                        const station = item.saidaFilialNorte || 0;
+                        const recreio = item.saidaFilialSul || 0;
+
+                        consolidadosGlobais[prodKey].entrada += item.estoqueEntrada || 0;
+                        consolidadosGlobais[prodKey].filialCentro += filialCentro;
+                        consolidadosGlobais[prodKey].filialNorte += filialNorte;
+                        consolidadosGlobais[prodKey].filialSul += filialSul;
+                        consolidadosGlobais[prodKey].totalSaidas += (filialCentro + filialNorte + filialSul);
+                        consolidadosGlobais[prodKey].ultimoFimDia = item.estoqueFimDoDia || 0;
+                    }
+                });
+
+                const tabelaConsolidada = document.getElementById('tabelaConsolidada');
+                const tabelaPorLoja = document.getElementById('tabelaPorLoja');
+                tabelaConsolidada.innerHTML = '';
+                tabelaPorLoja.innerHTML = '';
+
+                ordemProdutos.forEach(prod => {
+                    const grupo = consolidadosGlobais[prod];
+                    
+                    // CondiÃ§Ã£o para cor do estoque atual: vermelho se abaixo de 15 kg
+                    const corEstoque = grupo.ultimoFimDia < 15 ? 'red' : 'var(--texto-principal)';
+
+                    tabelaConsolidada.innerHTML += `<tr>
+                        <td><strong style="color: var(--texto-principal);">${grupo.produto}</strong></td>
+                        <td>${grupo.entrada.toFixed(2).replace('.', ',')} Kg</td>
+                        <td>${grupo.totalSaidas.toFixed(2).replace('.', ',')} Kg</td>
+                        <td><strong style="font-size: 14px; color: ${corEstoque};">${grupo.ultimoFimDia.toFixed(2).replace('.', ',')} Kg</strong></td>
+                    </tr>`;
+
+                    tabelaPorLoja.innerHTML += `<tr>
+                        <td><strong style="color: var(--texto-principal);">${grupo.produto}</strong></td>
+                        <td>${grupo.filialCentro.toFixed(2).replace('.', ',')} Kg</td>
+                        <td>${grupo.filialNorte.toFixed(2).replace('.', ',')} Kg</td>
+                        <td>${grupo.filialSul.toFixed(2).replace('.', ',')} Kg</td>
+                    </tr>`;
+                });
+
+            } catch (erro) {
+                console.error('Erro ao carregar dados:', erro);
+            }
+        }
+
+        async function carregarRelatoriosMensais() {
+            try {
+                const resposta = await fetch('/api/relatorios-mensais');
+                const dados = await resposta.json();
+                const tbody = document.getElementById('tabelaRelatorioMensal');
+                tbody.innerHTML = '';
+                
+                if (dados.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="6">Nenhum fechamento mensal registrado atÃ© o momento.</td></tr>`;
+                    return;
+                }
+
+                dados.forEach(item => {
+                    let dataFmt = item.dataFechamento || '-';
+                    if (item.dataFechamento && item.dataFechamento.includes('-')) {
+                        const [an, mn, dn] = item.dataFechamento.split('-');
+                        if (an && mn && dn) dataFmt = `${dn}-${mn}-${an}`;
+                    }
+                    tbody.innerHTML += `<tr>
+                        <td><strong>${item.mesAno}</strong></td>
+                        <td><strong>${item.produto}</strong></td>
+                        <td>${(item.totalEntradas ?? 0).toFixed(2).replace('.', ',')} Kg</td>
+                        <td>${(item.totalSaidas ?? 0).toFixed(2).replace('.', ',')} Kg</td>
+                        <td><strong>${(item.estoqueFinalFechamento ?? 0).toFixed(2).replace('.', ',')} Kg</strong></td>
+                        <td>${dataFmt}</td>
+                    </tr>`;
+                });
+            } catch (error) {
+                console.error('Erro ao carregar relatÃ³rios mensais:', error);
+            }
+        }
+
+        function exportarExcel() {
+            if (dadosFiltradosGlobais.length === 0) {
+                alert('NÃ£o hÃ¡ dados no perÃ­odo selecionado para exportar.');
+                return;
+            }
+
+            let csv = '\uFEFFID;Data/Hora;Produto;Estoque Inicial;Entrada;Filial Centro;Filial Norte;Filial Sul;Estoque Atual;Responsavel\n';
+            dadosFiltradosGlobais.forEach(item => {
+                csv += `${item.id};"${item.dataHora || item.data}";"${item.produto}";${item.estoqueInicial};${item.estoqueEntrada};${item.saidaFilialCentro};${item.saidaFilialNorte};${item.saidaFilialSul};${item.estoqueFimDoDia};"${item.responsavel}"\n`;
+            });
+
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `omotenashi_gestao_estoque_${document.getElementById('filtroDataInicio').value}_a_${document.getElementById('filtroDataFim').value}.csv`;
+            a.click();
+        }
+
+        function exportarPDF() {
+            window.print();
+        }
+
+        function enviarWhatsApp() {
+            const inicio = document.getElementById('filtroDataInicio').value.split('-').reverse().join('/');
+            const fim = document.getElementById('filtroDataFim').value.split('-').reverse().join('/');
+
+            let texto = `*OMOTENASHI - CONTROLE DE ESTOQUE*%0A`;
+            texto += `PerÃ­odo: ${inicio} atÃ© ${fim}%0A%0A`;
+            texto += `*Estoque Atual:*%0A`;
+
+            Object.keys(consolidadosGlobais).forEach(prod => {
+                const g = consolidadosGlobais[prod];
+                texto += `â€¢ *${g.produto}:* ${g.ultimoFimDia.toFixed(2).replace('.', ',')} Kg (Entradas: ${g.entrada.toFixed(2).replace('.', ',')} | SaÃ­das: ${g.totalSaidas.toFixed(2).replace('.', ',')})%0A`;
+            });
+
+            texto += `%0A_Enviado automaticamente pelo Sistema Omotenashi_`;
+
+            window.open(`https://api.whatsapp.com/send?text=${texto}`, '_blank');
+        }
+
+        function limparFiltro() {
+            document.getElementById('filtroDataInicio').value = '';
+            document.getElementById('filtroDataFim').value = '';
+            carregarDados();
+        }
+
+        async function excluirMovimentacao(id) {
+            if (confirm(`Deseja realmente excluir o lanÃ§amento ID ${id}?`)) {
+                const resposta = await fetch(`/movimentacoes/${id}`, { method: 'DELETE' });
+                if (resposta.ok) carregarDados();
+                else alert('Erro ao tentar excluir o registro.');
+            }
+        }
+
+        document.getElementById('formMovimentacao').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const dataEscolhida = document.getElementById('data').value;
+            const produto = document.getElementById('produto').value;
+            const entrada = converterParaFloat('estoqueEntrada');
+            const filialCentro = converterParaFloat('saidaFilialCentro');
+            const filialNorte = converterParaFloat('saidaFilialNorte');
+            const filialSul = converterParaFloat('saidaFilialSul');
+            const responsavel = document.getElementById('responsavel').value;
+
+            const mensagemConfirmacao = 
+                `Confirma o lanÃ§amento abaixo?\n\n` +
+                ` Data: ${dataEscolhida.split('-').reverse().join('/')}\n` +
+                `   Produto: ${produto}\n` +
+                `   Entrada: ${entrada.toFixed(2).replace('.', ',')} Kg\n` +
+                `    OlegÃ¡rio: ${olegario.toFixed(2).replace('.', ',')} Kg\n` +
+                `    Filial Norte: ${filialNorte.toFixed(2).replace('.', ',')} Kg\n` +
+                `    Filial Sul: ${filialSul.toFixed(2).replace('.', ',')} Kg\n` +
+                `    ResponsÃ¡vel: ${responsavel}`;
+
+            if (!confirm(mensagemConfirmacao)) {
+                return;
+            }
+
+            document.getElementById('filtroDataInicio').value = dataEscolhida;
+            document.getElementById('filtroDataFim').value = dataEscolhida;
+
+            const novaMovimentacao = {
+                data: dataEscolhida,
+                produto: produto,
+                estoqueEntrada: entrada,
+                saidaFilialCentro: filialCentro,
+                saidaFilialNorte: filialNorte,
+                saidaFilialSul: filialSul,
+                responsavel: responsavel
+            };
+
+            const resposta = await fetch('/movimentacoes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(novaMovimentacao)
+            });
+
+            if (resposta.ok) {
+                document.getElementById('produto').selectedIndex = 0;
+                document.getElementById('estoqueEntrada').value = '';
+                document.getElementById('saidaFilialCentro').value = '';
+                document.getElementById('saidaFilialNorte').value = '';
+                document.getElementById('saidaFilialSul').value = '';
+                document.getElementById('responsavel').value = '';
+                
+                carregarDados();
+                carregarRelatoriosMensais();
+
+                alert('Item lanÃ§ado com sucesso!');
+            } else {
+                alert('Erro ao registrar movimentaÃ§Ã£o.');
+            }
+        });
+
+        carregarDados();
+        carregarRelatoriosMensais();
+    </script>
+</body>
+</html>
