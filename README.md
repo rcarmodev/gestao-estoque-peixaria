@@ -3,7 +3,7 @@
 > **API REST e Dashboard Operacional desenvolvidos em Java 17 e Spring Boot para controle diário de insumos perecíveis de alto valor, rastreabilidade de distribuição entre filiais e fechamento automatizado de inventário.**
 
 ![Java](https://img.shields.io/badge/Java_17-ED8B00?style=for-the-badge&logo=openjdk&logoColor=white)
-![Spring Boot](https://img.shields.io/badge/Spring_Boot_4.x-6DB33F?style=for-the-badge&logo=spring&logoColor=white)
+![Spring Boot](https://img.shields.io/badge/Spring_Boot_3.x-6DB33F?style=for-the-badge&logo=spring&logoColor=white)
 ![Spring Data JPA](https://img.shields.io/badge/Spring_Data_JPA-59666C?style=for-the-badge&logo=hibernate&logoColor=white)
 ![H2 Database](https://img.shields.io/badge/H2_Database-003B57?style=for-the-badge&logo=h2&logoColor=white)
 ![Maven](https://img.shields.io/badge/Apache_Maven-C71A36?style=for-the-badge&logo=apache-maven&logoColor=white)
@@ -16,6 +16,7 @@ Em operações de gastronomia de alto giro (como restaurantes japoneses, peixari
 
 Os principais gargalos operacionais identificados em campo foram:
 * **Falta de conciliação de peso na entrada:** Divergências entre o peso faturado na nota fiscal e a pesagem real recebida na balança de recebimento.
+* **Quebras por degelo e manipulação:** Perda de peso invisível no descongelamento e limpeza de pescados que corrói a margem sem registro de inventário.
 * **Fricção de distribuição multi-lojas:** Descentralização no controle de remessas enviadas para diferentes filiais e pontos de delivery.
 * **Erros de digitação por equipes de chão de loja:** Softwares tradicionais com formulários longos e complexos acabam sendo abandonados por cozinheiros e estoquistas que trabalham em ambientes dinâmicos e com luvas.
 
@@ -37,9 +38,18 @@ src/main/java/com/estoque/peixaria/
 ```
 
 * **Linguagem:** Java 17 (LTS).
-* **Framework:** Spring Boot 4.x (WebMVC, Data JPA).
+* **Framework:** Spring Boot 3.x (WebMVC, Data JPA).
 * **Persistência:** H2 Database em modo arquivo local (`AUTO_SERVER=TRUE`), garantindo retenção de dados entre reinicializações sem dependências externas complexas para prototipagem rápida.
 * **Frontend Integrado:** Dashboard Single Page Application (SPA) em Vanilla HTML5, CSS3 com variáveis dinâmicas e JavaScript nativo, incluindo visualização tabular e extrato diário consolidado.
+
+### 📡 Endpoints da API REST
+
+| Método | Endpoint | Descrição |
+| :--- | :--- | :--- |
+| `GET` | `/movimentacoes` | Lista o histórico consolidado de movimentações e saldo atual |
+| `POST` | `/movimentacoes` | Registra entrada/saídas e recalcula o estoque final automaticamente |
+| `DELETE` | `/movimentacoes/{id}` | Exclui um registro específico de movimentação por ID |
+| `GET` | `/api/relatorios-mensais` | Retorna os snapshots consolidados de fechamento mensal |
 
 ---
 
